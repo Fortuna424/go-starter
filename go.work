@@ -1,0 +1,6 @@
+go 1.23.0
+
+use (
+    2/tempconv
+    2/popcount
+)
