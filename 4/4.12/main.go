@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -61,18 +62,42 @@ func Download(ch chan int) {
 	wg.Done()
 }
 
+func Load() []*Info {
+	var infos []*Info
+	// Load the data from the files
+	files, err := os.ReadDir("data")
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, file := range files {
+		file, err := os.Open(fmt.Sprintf("data/%s", file.Name()))
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer file.Close()
+		var info Info
+		if err := json.NewDecoder(file).Decode(&info); err != nil {
+			log.Fatal(err)
+		}
+		infos = append(infos, &info)
+	}
+	fmt.Printf("Loaded %d records\n", len(infos))
+	return infos
+}
+
+func Search(infos []*Info, query string) {
+	// Search for the query in the data
+	for _, info := range infos {
+		if info.Title == query {
+			fmt.Println(info.Title)
+			fmt.Println(info.Img)
+		}
+	}
+}
+
 func main() {
-	ch := make(chan int)
-
-	for i := 0; i < 5; i++ {
-		go Download(ch)
-	}
-
-	for i := 1; i <= 3060; i++ {
-		ch <- i
-	}
-
-	close(ch)
-	wg.Wait()
+	query := flag.String("query", "Can't Sleep", "search query")
+	flag.Parse()
+	Search(Load(), *query)
 
 }
